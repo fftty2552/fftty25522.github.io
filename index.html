@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบข้อมูลอาคารเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #16324F;
+    --navy-deep: #0F2438;
+    --blue-line: #4A7CA8;
+    --blue-line-soft: rgba(255,255,255,.28);
+    --paper: #F6F4EC;
+    --paper-line: #DFD9C6;
+    --ink: #1B2430;
+    --ink-soft: #5B6472;
+    --signal: #C1440E;
+    --signal-soft: #F4DCCB;
+    --ok: #2E7D4F;
+    --radius: 3px;
+    --shadow: 0 10px 30px -12px rgba(15,36,56,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    min-height: 100vh;
+  }
+  h1,h2,h3, .display, button, .badge, label, .field-label{
+    font-family: 'Chakra Petch', 'IBM Plex Sans Thai', sans-serif;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+
+  /* ---------- Title block header ---------- */
+  header.titleblock{
+    background: var(--navy);
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0 2px, transparent 2px 14px);
+    color: #fff;
+    border-bottom: 4px solid var(--signal);
+    padding: 18px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand svg{ flex-shrink:0; }
+  .brand-text h1{ margin:0; font-size: 1.5rem; font-weight:700; letter-spacing:.5px; }
+  .brand-text p{ margin:2px 0 0; font-size:.78rem; letter-spacing:2px; text-transform:uppercase; color: var(--blue-line-soft); }
+  .titleblock-right{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .meta-count{ font-size:.75rem; color: var(--blue-line-soft); text-align:right; line-height:1.4; }
+  .meta-count b{ color:#fff; font-family:'Chakra Petch'; font-size:.95rem; }
+
+  button{ cursor:pointer; border:none; font-size:.9rem; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 9px 16px; border-radius: var(--radius);
+    font-weight:600; letter-spacing:.3px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn-outline{ background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.55); }
+  .btn-outline:hover{ background: rgba(255,255,255,.1); }
+  .btn-signal{ background: var(--signal); color:#fff; }
+  .btn-signal:hover{ box-shadow: 0 4px 14px -4px rgba(193,68,14,.7); }
+  .btn-ghost{ background: transparent; color: var(--navy); border:1.5px solid var(--paper-line); }
+  .btn-ghost:hover{ border-color: var(--navy); }
+  .btn-admin{ background:#fff; color:var(--navy); border:1.5px solid #fff; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--signal); outline-offset: 2px;
+  }
+
+  .admin-chip{
+    display:flex; align-items:center; gap:8px;
+    background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.35);
+    padding: 6px 12px; border-radius: 20px; font-size:.8rem; color:#fff;
+  }
+  .admin-chip .dot{ width:8px; height:8px; border-radius:50%; background:#7FE0A0; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    max-width: 1180px; margin: 22px auto 0; padding: 0 24px;
+    display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+  }
+  .search-wrap{
+    position:relative; flex: 1 1 260px; min-width:220px;
+  }
+  .search-wrap svg{ position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.5; }
+  .search-wrap input{
+    width:100%; padding: 10px 12px 10px 36px;
+    border: 1.5px solid var(--paper-line); border-radius: var(--radius);
+    background:#fff; font-family:inherit; font-size:.92rem; color:var(--ink);
+  }
+  select{
+    padding: 10px 12px; border:1.5px solid var(--paper-line); border-radius: var(--radius);
+    background:#fff; font-family:inherit; font-size:.88rem; color:var(--ink); min-width:150px;
+  }
+  .toolbar .spacer{ flex: 1 1 auto; }
+
+  /* ---------- Grid & cards ---------- */
+  main{ max-width:1180px; margin: 22px auto 60px; padding: 0 24px; }
+  .grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:18px;
+  }
+  .card{
+    position:relative; background:#fff; border:1px solid var(--paper-line);
+    border-radius: var(--radius); overflow:hidden; cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    text-align:left; padding:0;
+  }
+  .card:hover{ transform: translateY(-3px); box-shadow: var(--shadow); }
+  .card::before, .card::after{
+    content:""; position:absolute; width:14px; height:14px; pointer-events:none; z-index:2;
+  }
+  .card::before{ top:6px; left:6px; border-top:2px solid var(--signal); border-left:2px solid var(--signal); }
+  .card::after{ bottom:6px; right:6px; border-bottom:2px solid var(--signal); border-right:2px solid var(--signal); }
+  .card-thumb{
+    height:64px; background: repeating-linear-gradient(45deg, #1c3c5c 0 10px, #16324F 10px 20px);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .card-thumb svg{ opacity:.35; }
+  .card-body{ padding: 14px 16px 16px; }
+  .card-type{
+    display:inline-block; font-size:.68rem; letter-spacing:1px; text-transform:uppercase;
+    color: var(--signal); border:1px solid var(--signal); border-radius:2px;
+    padding: 2px 7px; margin-bottom:8px; font-weight:600;
+  }
+  .card-title{ margin:0 0 6px; font-size:1.05rem; font-weight:600; color:var(--navy); line-height:1.3; }
+  .card-sub{ display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--ink-soft); }
+  .card-sub svg{ opacity:.6; }
+
+  /* ---------- Empty / loading ---------- */
+  .empty-state{
+    text-align:center; padding: 70px 20px; color: var(--ink-soft);
+  }
+  .empty-state svg{ opacity:.35; margin-bottom:14px; }
+  .empty-state h3{ color:var(--navy); margin:0 0 6px; font-size:1.1rem; }
+  .empty-state p{ margin:0; font-size:.9rem; }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background: rgba(15,36,56,.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:100;
+  }
+  .modal-overlay[hidden]{ display:none; }
+  .modal{
+    background:#fff; width:100%; border-radius: var(--radius);
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.4);
+    max-height: 90vh; display:flex; flex-direction:column;
+  }
+  .modal-sm{ max-width:380px; }
+  .modal-md{ max-width:540px; }
+  .modal-lg{ max-width:720px; }
+  .modal-titleblock{
+    background: var(--navy); color:#fff; padding:16px 22px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-bottom:3px solid var(--signal);
+  }
+  .modal-titleblock h2{ margin:0; font-size:1.1rem; font-weight:600; }
+  .modal-close{ background:transparent; color:#fff; padding:4px; border-radius:4px; }
+  .modal-close:hover{ background: rgba(255,255,255,.15); }
+  .modal-content{ padding: 20px 22px; overflow-y:auto; }
+  .modal-footer{ padding: 14px 22px; border-top:1px solid var(--paper-line); display:flex; justify-content:flex-end; gap:10px; }
+
+  /* Detail sheet */
+  .sheet-fields{ display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:12px 20px; margin-bottom:16px; }
+  .sheet-field .field-label{ font-size:.7rem; letter-spacing:1px; text-transform:uppercase; color: var(--ink-soft); margin-bottom:3px; }
+  .sheet-field .field-value{ font-size:.95rem; color: var(--ink); font-weight:500; }
+  .dim-divider{
+    border:none; border-top:1px dashed var(--paper-line); margin: 16px 0;
+    position:relative;
+  }
+  .sheet-desc{ font-size:.92rem; line-height:1.7; color:var(--ink); white-space:pre-wrap; }
+  .tag-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .tag{ background: var(--paper); border:1px solid var(--paper-line); border-radius:20px; padding:3px 11px; font-size:.78rem; color:var(--ink-soft); }
+
+  /* Form */
+  .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .form-grid .full{ grid-column: 1 / -1; }
+  @media (max-width:520px){ .form-grid{ grid-template-columns:1fr; } }
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field label{ font-size:.78rem; font-weight:600; color: var(--navy); letter-spacing:.3px; }
+  .field input, .field select, .field textarea{
+    padding:9px 11px; border:1.5px solid var(--paper-line); border-radius:var(--radius);
+    font-family: 'IBM Plex Sans Thai', sans-serif; font-size:.9rem; color:var(--ink); background:#fff;
+  }
+  .field textarea{ resize:vertical; min-height:80px; }
+  .req{ color:var(--signal); }
+  .error-text{ color: var(--signal); font-size:.78rem; margin-top:4px; display:none; }
+  .field.has-error input, .field.has-error textarea{ border-color: var(--signal); }
+  .field.has-error .error-text{ display:block; }
+
+  /* login */
+  .login-body p{ font-size:.85rem; color:var(--ink-soft); margin:0 0 14px; }
+
+  /* toast */
+  #toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background: var(--navy); color:#fff; padding:12px 20px; border-radius:var(--radius);
+    font-size:.88rem; box-shadow: var(--shadow); z-index:200; border-left:4px solid var(--signal);
+    display:flex; align-items:center; gap:10px;
+  }
+  #toast.ok{ border-left-color: var(--ok); }
+  #toast[hidden]{ display:none; }
+
+  .admin-actions{ display:flex; gap:8px; }
+  .icon-btn{
+    background: var(--paper); border:1px solid var(--paper-line); border-radius: var(--radius);
+    padding:7px 9px; display:flex; align-items:center; gap:6px; color:var(--navy); font-weight:600; font-size:.8rem;
+  }
+  .icon-btn:hover{ border-color: var(--navy); }
+  .icon-btn.danger{ color: var(--signal); }
+  .icon-btn.danger:hover{ border-color: var(--signal); }
+
+  footer.sitefoot{ text-align:center; padding: 20px; color: var(--ink-soft); font-size:.75rem; }
+</style>
+</head>
+<body>
+
+<header class="titleblock">
+  <div class="brand">
+    <svg width="42" height="32" viewBox="0 0 42 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="12" width="9" height="19" stroke="white" stroke-width="1.6"/>
+      <rect x="12" y="4" width="11" height="27" stroke="white" stroke-width="1.6"/>
+      <rect x="25" y="16" width="8" height="15" stroke="white" stroke-width="1.6"/>
+      <rect x="35" y="20" width="6" height="11" stroke="white" stroke-width="1.6"/>
+      <line x1="0" y1="31.3" x2="42" y2="31.3" stroke="#C1440E" stroke-width="1.6"/>
+    </svg>
+    <div class="brand-text">
+      <h1>ระบบข้อมูลอาคารเรียน</h1>
+      <p>School Building Registry</p>
+    </div>
+  </div>
+  <div class="titleblock-right">
+    <div class="meta-count" id="metaCount">กำลังโหลดข้อมูล...</div>
+    <div id="authArea"></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#1B2430" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#1B2430" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="searchInput" type="text" placeholder="ค้นหาชื่ออาคาร, สถานที่, รายละเอียด...">
+  </div>
+  <select id="filterType"><option value="">ทุกประเภทอาคาร</option></select>
+  <select id="filterFloor">
+    <option value="">ทุกจำนวนชั้น</option>
+    <option value="1">1 ชั้น</option>
+    <option value="2">2 ชั้น</option>
+    <option value="3">3 ชั้น</option>
+    <option value="4">4 ชั้น</option>
+  </select>
+  <div class="spacer"></div>
+  <div id="addBtnWrap"></div>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState" hidden>
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none"><path d="M4 21V9l8-5 8 5v12" stroke="#1B2430" stroke-width="1.4"/><path d="M9 21v-6h6v6" stroke="#1B2430" stroke-width="1.4"/></svg>
+    <h3 id="emptyTitle">ยังไม่มีข้อมูลอาคาร</h3>
+    <p id="emptySub">เข้าสู่ระบบผู้ดูแลเพื่อเริ่มเพิ่มข้อมูลอาคารเรียน</p>
+  </div>
+</main>
+
+<footer class="sitefoot">ข้อมูลซิงค์ระหว่างอุปกรณ์โดยอัตโนมัติ · อัปเดตล่าสุดจะแสดงทุกครั้งที่มีการแก้ไข</footer>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-titleblock">
+      <h2>เข้าสู่ระบบผู้ดูแล</h2>
+      <button class="modal-close" data-close="loginModal" aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-content login-body">
+      <p>กรอกรหัสผ่านสำหรับผู้ดูแลระบบเพื่อเพิ่มหรือแก้ไขข้อมูลอาคาร</p>
+      <div class="field" id="loginField">
+        <label for="loginCode">รหัสผ่าน</label>
+        <input type="password" id="loginCode" placeholder="กรอกรหัส 6 หลัก" inputmode="numeric">
+        <div class="error-text">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="loginModal">ยกเลิก</button>
+      <button class="btn btn-signal" id="loginSubmit">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal" hidden>
+  <div class="modal modal-lg">
+    <div class="modal-titleblock">
+      <h2 id="detailTitle">ชื่ออาคาร</h2>
+      <button class="modal-close" data-close="detailModal" aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-content" id="detailContent"></div>
+    <div class="modal-footer" id="detailFooter"></div>
+  </div>
+</div>
+
+<!-- Form Modal -->
+<div class="modal-overlay" id="formModal" hidden>
+  <div class="modal modal-lg">
+    <div class="modal-titleblock">
+      <h2 id="formTitle">เพิ่มอาคารใหม่</h2>
+      <button class="modal-close" data-close="formModal" aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-content">
+      <form id="buildingForm">
+        <div class="form-grid">
+          <div class="field full" id="f_name">
+            <label>ชื่ออาคาร <span class="req">*</span></label>
+            <input type="text" id="name" placeholder="เช่น อาคาร 1 เฉลิมพระเกียรติ">
+            <div class="error-text">กรุณากรอกชื่ออาคาร</div>
+          </div>
+          <div class="field">
+            <label>ประเภทอาคาร</label>
+            <input type="text" id="type" list="typeList" placeholder="เช่น อาคารเรียน">
+            <datalist id="typeList"></datalist>
+          </div>
+          <div class="field" id="f_floors">
+            <label>จำนวนชั้น <span class="req">*</span></label>
+            <input type="number" id="floors" min="1" max="4" placeholder="เช่น 4">
+            <div class="error-text">กรุณากรอกจำนวนชั้นระหว่าง 1-4</div>
+          </div>
+          <div class="field">
+            <label>ปีที่สร้าง</label>
+            <input type="text" id="yearBuilt" placeholder="เช่น 2548">
+          </div>
+          <div class="field">
+            <label>หน่วยงาน/ผู้ดูแล</label>
+            <input type="text" id="department" placeholder="เช่น ฝ่ายอาคารสถานที่">
+          </div>
+          <div class="field full">
+            <label>ตำแหน่งที่ตั้ง</label>
+            <input type="text" id="location" placeholder="เช่น ด้านหลังสนามกีฬา ติดประตู 2">
+          </div>
+          <div class="field full">
+            <label>สิ่งอำนวยความสะดวก (คั่นด้วยจุลภาค , )</label>
+            <input type="text" id="facilities" placeholder="เช่น ลิฟต์, ห้องน้ำผู้พิการ, ห้องปฐมพยาบาล">
+          </div>
+          <div class="field full">
+            <label>รายละเอียดเพิ่มเติม</label>
+            <textarea id="description" placeholder="รายละเอียดการใช้งาน ห้องเรียน หน่วยงานภายในอาคาร ฯลฯ"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="formModal">ยกเลิก</button>
+      <button class="btn btn-signal" id="formSubmit">บันทึกข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-titleblock">
+      <h2 id="confirmTitle">ยืนยันการทำรายการ</h2>
+      <button class="modal-close" data-close="confirmModal" aria-label="ปิด">✕</button>
+    </div>
+    <div class="modal-content"><p id="confirmMsg" style="margin:0;font-size:.9rem;color:var(--ink-soft);"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="confirmModal">ยกเลิก</button>
+      <button class="btn btn-signal" id="confirmOk">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script>
+const ADMIN_CODE = "123456";
+const SUGGESTED_TYPES = ["อาคารเรียน","อาคารปฏิบัติการ","อาคารสำนักงาน","หอประชุม","โรงยิม/พลศึกษา","หอสมุด","โรงอาหาร","หอพัก"];
+
+let state = {
+  buildings: [],
+  isAdmin: false,
+  search: "",
+  filterType: "",
+  filterFloor: "",
+  editingId: null,
+  loaded: false
+};
+let pendingConfirm = null;
+
+/* ---------------- utils ---------------- */
+function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(ts){
+  if(!ts) return "-";
+  const d = new Date(ts);
+  return d.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) + " " +
+         d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+}
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type === 'ok' ? 'ok' : '';
+  t.hidden = false;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>{ t.hidden = true; }, 3200);
+}
+function openModal(id){ document.getElementById(id).hidden = false; }
+function closeModal(id){ document.getElementById(id).hidden = true; }
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target === ov) closeModal(ov.id); });
+});
+function confirmAction(title, msg, onOk){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  pendingConfirm = onOk;
+  openModal('confirmModal');
+}
+document.getElementById('confirmOk').addEventListener('click', ()=>{
+  const fn = pendingConfirm; pendingConfirm = null;
+  closeModal('confirmModal');
+  if(fn) fn();
+});
+
+/* ---------------- storage sync ---------------- */
+async function loadData(silent){
+  try{
+    const res = await window.storage.get('buildings', true);
+    const data = res && res.value ? JSON.parse(res.value) : [];
+    const newStr = JSON.stringify(data);
+    const oldStr = JSON.stringify(state.buildings);
+    if(newStr !== oldStr){
+      state.buildings = data;
+      render();
+    }
+    state.loaded = true;
+  }catch(err){
+    // key not found yet = first run, treat as empty
+    state.buildings = state.buildings || [];
+    state.loaded = true;
+    if(!silent) render();
+  }
+}
+async function persistData(){
+  try{
+    const result = await window.storage.set('buildings', JSON.stringify(state.buildings), true);
+    if(!result) throw new Error('save failed');
+    return true;
+  }catch(err){
+    console.error('Storage error:', err);
+    return false;
+  }
+}
+
+/* ---------------- auth ---------------- */
+function renderAuthArea(){
+  const el = document.getElementById('authArea');
+  const addWrap = document.getElementById('addBtnWrap');
+  if(state.isAdmin){
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="admin-chip"><span class="dot"></span> โหมดผู้ดูแล</div>
+        <button class="btn btn-outline" id="logoutBtn">ออกจากระบบ</button>
+      </div>`;
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      state.isAdmin = false;
+      renderAuthArea();
+      render();
+      showToast('ออกจากระบบแล้ว');
+    });
+    addWrap.innerHTML = `
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-signal" id="addBtn">+ เพิ่มอาคาร</button>
+        <button class="icon-btn danger" id="resetBtn" title="ลบข้อมูลทั้งหมด">ล้างข้อมูล</button>
+      </div>`;
+    document.getElementById('addBtn').addEventListener('click', ()=> openForm(null));
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      confirmAction('ลบข้อมูลทั้งหมด', 'ต้องการลบข้อมูลอาคารทั้งหมดถาวรใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้', async ()=>{
+        state.buildings = [];
+        const ok = await persistData();
+        render();
+        showToast(ok ? 'ลบข้อมูลทั้งหมดแล้ว' : 'เกิดข้อผิดพลาดในการลบข้อมูล');
+      });
+    });
+  }else{
+    el.innerHTML = `<button class="btn btn-admin" id="loginBtn">เข้าสู่ระบบผู้ดูแล</button>`;
+    document.getElementById('loginBtn').addEventListener('click', ()=>{
+      document.getElementById('loginCode').value = '';
+      document.getElementById('loginField').classList.remove('has-error');
+      openModal('loginModal');
+      setTimeout(()=> document.getElementById('loginCode').focus(), 50);
+    });
+    addWrap.innerHTML = '';
+  }
+}
+document.getElementById('loginSubmit').addEventListener('click', doLogin);
+document.getElementById('loginCode').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') doLogin(); });
+function doLogin(){
+  const val = document.getElementById('loginCode').value.trim();
+  if(val === ADMIN_CODE){
+    state.isAdmin = true;
+    closeModal('loginModal');
+    renderAuthArea();
+    render();
+    showToast('เข้าสู่ระบบสำเร็จ', 'ok');
+  }else{
+    document.getElementById('loginField').classList.add('has-error');
+  }
+}
+
+/* ---------------- render list ---------------- */
+function getFilteredTypes(){
+  const set = new Set(state.buildings.map(b=>b.type).filter(Boolean));
+  return Array.from(set).sort();
+}
+function updateTypeFilterOptions(){
+  const sel = document.getElementById('filterType');
+  const current = sel.value;
+  const types = getFilteredTypes();
+  sel.innerHTML = '<option value="">ทุกประเภทอาคาร</option>' + types.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = types.includes(current) ? current : '';
+  // datalist for form
+  const dl = document.getElementById('typeList');
+  const merged = Array.from(new Set([...SUGGESTED_TYPES, ...types]));
+  dl.innerHTML = merged.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
+}
+function getFiltered(){
+  const q = state.search.trim().toLowerCase();
+  return state.buildings.filter(b=>{
+    if(state.filterType && b.type !== state.filterType) return false;
+    if(state.filterFloor && String(b.floors) !== state.filterFloor) return false;
+    if(q){
+      const hay = [b.name, b.description, b.location, b.department].filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+}
+function iconBuilding(){
+  return `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 21V9l8-5 8 5v12" stroke="white" stroke-width="1.3"/><path d="M9 21v-6h6v6" stroke="white" stroke-width="1.3"/></svg>`;
+}
+function iconFloors(){
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 20h18M5 20V9l7-5 7 5v11" stroke="#5B6472" stroke-width="1.6"/></svg>`;
+}
+function render(){
+  updateTypeFilterOptions();
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  const list = state.loaded ? getFiltered() : [];
+  document.getElementById('metaCount').innerHTML =
+    state.loaded ? `แสดง <b>${list.length}</b> จาก <b>${state.buildings.length}</b> อาคาร` : 'กำลังโหลดข้อมูล...';
+
+  if(state.loaded && list.length === 0){
+    grid.innerHTML = '';
+    empty.hidden = false;
+    if(state.buildings.length === 0){
+      document.getElementById('emptyTitle').textContent = 'ยังไม่มีข้อมูลอาคาร';
+      document.getElementById('emptySub').textContent = state.isAdmin ? 'กดปุ่ม "+ เพิ่มอาคาร" เพื่อเริ่มเพิ่มข้อมูล' : 'เข้าสู่ระบบผู้ดูแลเพื่อเริ่มเพิ่มข้อมูลอาคารเรียน';
+    }else{
+      document.getElementById('emptyTitle').textContent = 'ไม่พบอาคารที่ตรงกับเงื่อนไข';
+      document.getElementById('emptySub').textContent = 'ลองปรับคำค้นหาหรือตัวกรองใหม่อีกครั้ง';
+    }
+    return;
+  }
+  empty.hidden = true;
+  grid.innerHTML = list.map(b=>{
+    return `
+    <button class="card" data-id="${b.id}">
+      <div class="card-thumb">${iconBuilding()}</div>
+      <div class="card-body">
+        ${b.type ? `<span class="card-type">${escapeHtml(b.type)}</span>` : ''}
+        <h3 class="card-title">${escapeHtml(b.name)}</h3>
+        <div class="card-sub">${iconFloors()} ${escapeHtml(String(b.floors||'-'))} ชั้น${b.location ? ' · ' + escapeHtml(b.location) : ''}</div>
+      </div>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', ()=> openDetail(card.dataset.id));
+  });
+}
+
+/* ---------------- detail modal ---------------- */
+function openDetail(id){
+  const b = state.buildings.find(x=>x.id === id);
+  if(!b) return;
+  document.getElementById('detailTitle').textContent = b.name;
+  const fields = [
+    ['ประเภทอาคาร', b.type || '-'],
+    ['จำนวนชั้น', (b.floors || '-') + ' ชั้น'],
+    ['ปีที่สร้าง', b.yearBuilt || '-'],
+    ['หน่วยงาน/ผู้ดูแล', b.department || '-'],
+    ['ตำแหน่งที่ตั้ง', b.location || '-'],
+    ['อัปเดตล่าสุด', formatDate(b.updatedAt)],
+  ];
+  const fieldsHtml = fields.map(([label,val])=>`
+    <div class="sheet-field"><div class="field-label">${label}</div><div class="field-value">${escapeHtml(val)}</div></div>
+  `).join('');
+  const facilities = (b.facilities && b.facilities.length)
+    ? `<div class="sheet-field full"><div class="field-label">สิ่งอำนวยความสะดวก</div><div class="tag-list">${b.facilities.map(f=>`<span class="tag">${escapeHtml(f)}</span>`).join('')}</div></div>`
+    : '';
+  document.getElementById('detailContent').innerHTML = `
+    <div class="sheet-fields">${fieldsHtml}</div>
+    ${facilities}
+    <hr class="dim-divider">
+    <div class="field-label" style="margin-bottom:6px;">รายละเอียด</div>
+    <div class="sheet-desc">${escapeHtml(b.description || 'ไม่มีรายละเอียดเพิ่มเติม')}</div>
+  `;
+  const footer = document.getElementById('detailFooter');
+  if(state.isAdmin){
+    footer.innerHTML = `
+      <button class="icon-btn danger" id="delBtn">ลบอาคาร</button>
+      <button class="btn btn-ghost" data-close="detailModal">ปิด</button>
+      <button class="btn btn-signal" id="editBtn">แก้ไขข้อมูล</button>
+    `;
+    document.getElementById('editBtn').addEventListener('click', ()=>{ closeModal('detailModal'); openForm(b.id); });
+    document.getElementById('delBtn').addEventListener('click', ()=>{
+      confirmAction('ลบอาคารนี้', `ต้องการลบ "${b.name}" ใช่หรือไม่?`, async ()=>{
+        state.buildings = state.buildings.filter(x=>x.id !== b.id);
+        const ok = await persistData();
+        closeModal('detailModal');
+        render();
+        showToast(ok ? 'ลบข้อมูลเรียบร้อย' : 'เกิดข้อผิดพลาดในการลบข้อมูล');
+      });
+    });
+  }else{
+    footer.innerHTML = `<button class="btn btn-ghost" data-close="detailModal">ปิด</button>`;
+  }
+  footer.querySelectorAll('[data-close]').forEach(btn=> btn.addEventListener('click', ()=> closeModal(btn.dataset.close)));
+  openModal('detailModal');
+}
+
+/* ---------------- form modal ---------------- */
+function openForm(id){
+  state.editingId = id;
+  const b = id ? state.buildings.find(x=>x.id === id) : null;
+  document.getElementById('formTitle').textContent = b ? 'แก้ไขข้อมูลอาคาร' : 'เพิ่มอาคารใหม่';
+  document.getElementById('name').value = b ? b.name : '';
+  document.getElementById('type').value = b ? (b.type||'') : '';
+  document.getElementById('floors').value = b ? b.floors : '';
+  document.getElementById('yearBuilt').value = b ? (b.yearBuilt||'') : '';
+  document.getElementById('department').value = b ? (b.department||'') : '';
+  document.getElementById('location').value = b ? (b.location||'') : '';
+  document.getElementById('facilities').value = b && b.facilities ? b.facilities.join(', ') : '';
+  document.getElementById('description').value = b ? (b.description||'') : '';
+  document.getElementById('f_name').classList.remove('has-error');
+  document.getElementById('f_floors').classList.remove('has-error');
+  updateTypeFilterOptions();
+  openModal('formModal');
+}
+document.getElementById('formSubmit').addEventListener('click', saveBuilding);
+async function saveBuilding(){
+  const name = document.getElementById('name').value.trim();
+  const floorsVal = document.getElementById('floors').value;
+  let valid = true;
+  document.getElementById('f_name').classList.toggle('has-error', !name);
+  const floorsNum = Number(floorsVal);
+  document.getElementById('f_floors').classList.toggle('has-error', !floorsVal || floorsNum <= 0 || floorsNum > 4);
+  if(!name || !floorsVal || floorsNum <= 0 || floorsNum > 4) valid = false;
+  if(!valid) return;
+
+  const facilitiesArr = document.getElementById('facilities').value
+    .split(',').map(s=>s.trim()).filter(Boolean);
+
+  const obj = {
+    id: state.editingId || uid(),
+    name,
+    type: document.getElementById('type').value.trim(),
+    floors: floorsNum,
+    yearBuilt: document.getElementById('yearBuilt').value.trim(),
+    department: document.getElementById('department').value.trim(),
+    location: document.getElementById('location').value.trim(),
+    facilities: facilitiesArr,
+    description: document.getElementById('description').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  const btn = document.getElementById('formSubmit');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  if(state.editingId){
+    const idx = state.buildings.findIndex(x=>x.id === state.editingId);
+    if(idx > -1) state.buildings[idx] = obj; else state.buildings.push(obj);
+  }else{
+    state.buildings.push(obj);
+  }
+  const ok = await persistData();
+  btn.disabled = false; btn.textContent = 'บันทึกข้อมูล';
+
+  if(ok){
+    closeModal('formModal');
+    render();
+    showToast('บันทึกข้อมูลเรียบร้อย', 'ok');
+  }else{
+    showToast('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+  }
+}
+
+/* ---------------- filters/search wiring ---------------- */
+document.getElementById('searchInput').addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
+document.getElementById('filterType').addEventListener('change', (e)=>{ state.filterType = e.target.value; render(); });
+document.getElementById('filterFloor').addEventListener('change', (e)=>{ state.filterFloor = e.target.value; render(); });
+
+/* ---------------- init & sync ---------------- */
+renderAuthArea();
+render();
+loadData().then(render);
+setInterval(()=> loadData(true), 8000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) loadData(true); });
+window.addEventListener('focus', ()=> loadData(true));
+</script>
+</body>
+</html>
